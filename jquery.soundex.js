@@ -32,9 +32,61 @@
                         this.searchWord(this.settings.search[i]);
                         if(this.settings.current_search.length > 0)
                         {
-                            this.highlightWord();
+                            this.prepareHighlight();
                         }
                     }
+                },                
+                searchWord: function(word) {
+                    this.settings.current_search = new Array();
+                    var text = this.element.text();
+                    text = this.formatString(text);
+                    var words_array = text.split(' ');
+                    for(var i = 0; i < words_array.length; i++)
+                    {
+                        if($.inArray(words_array[i], this.settings.current_search) == -1 && this.soundex(word) == this.soundex(words_array[i]))
+                        {
+                            this.settings.current_search.push(words_array[i]);
+                        }
+                    }
+                },
+                prepareHighlight: function() {
+                    var passed = new Array();
+                    var match = '';
+                    var html = '';
+                    var regex = '';
+                    for(var i = 0; i < this.settings.current_search.length; i++)
+                    {
+                        if(-1 == $.inArray(this.settings.current_search[i], passed))
+                        {
+                            this.highlightTextNode(this.element.get(0), this.settings.current_search[i]);
+                        }
+                    }
+                    if(html != '')
+                    {
+                        this.element.html(html);
+                    }
+                    this.settings.current_search = null;
+                },
+                highlightTextNode: function (current_node, current_search) {
+                    var skip = 0;
+                    var new_node = $(document.createElement(this.settings.wrapper.node)).addClass(this.settings.wrapper.class);
+                    if (current_node.nodeType == 3) {
+                        var pos = $(current_node).text().indexOf(current_search);
+                        if (pos >= 0)
+                        {
+                            new_node.text(current_search);
+                            new_node = new_node.clone().wrap('<div></div>').parent();
+                            var text = $(current_node).text().replace(current_search, new_node.html());
+                            $(current_node).after(text).remove();
+                            skip = 1;
+                        }
+                    }
+                    else if (current_node.nodeType == 1 && current_node.childNodes && !/(script|style)/i.test(current_node.tagName)) {
+                        for (var i = 0; i < current_node.childNodes.length; ++i) {
+                            i += this.highlightTextNode(current_node.childNodes[i], current_search);
+                        }
+                    }
+                    return skip;
                 },
                 formatSearch : function() {
                     if(typeof this.settings.search === 'string')
@@ -59,66 +111,6 @@
                 formatString: function(string)
                 {
                     return string.replace(/\W/g, ' ').replace(/\s+/g, ' ').replace(/(^\s+)|\s+$/, '');
-                },
-                innerHighlight: function (current_node, current_search) {
-                    var skip = 0;
-                    if (current_node.nodeType == 3) {
-                        var pos = $(current_node).text().indexOf(current_search);
-                        if (pos >= 0)
-                        {
-                            var new_node = $(document.createElement(this.settings.wrapper.node));
-                            new_node.addClass(this.settings.wrapper.class);
-                            new_node.text(current_search);
-                            $(current_node).text($(current_node).text().replace(current_search, new_node.clone().wrap('<div></div>').parent().html()));
-                            skip = 1;
-                        }
-                    }
-                    else if (current_node.nodeType == 1 && current_node.childNodes && !/(script|style)/i.test(current_node.tagName)) {
-                        for (var i = 0; i < current_node.childNodes.length; ++i) {
-                            i += this.innerHighlight(current_node.childNodes[i], current_search);
-                        }
-                    }
-                    return skip;
-                },
-                searchWord: function(word) {
-                    this.settings.current_search = new Array();
-                    var text = this.element.text();
-                    text = this.formatString(text);
-                    var words_array = text.split(' ');
-                    for(var i = 0; i < words_array.length; i++)
-                    {
-                        if($.inArray(words_array[i], this.settings.current_search) == -1 && this.soundex(word) == this.soundex(words_array[i]))
-                        {
-                            this.settings.current_search.push(words_array[i]);
-                        }
-                    }
-                },
-                highlightWord : function() {
-                    var passed = new Array();
-                    var match = '';
-                    var html = '';
-                    var regex = '';
-                    for(var i = 0; i < this.settings.current_search.length; i++)
-                    {
-                        if(-1 == $.inArray(this.settings.current_search[i], passed))
-                        {
-                            this.innerHighlight(this.element.get(0), this.settings.current_search[i]);
-//                            html = $(this.element).html();
-//                            regex = new RegExp(this.settings.current_search[i], 'g');
-//                            match = html.match(regex);
-//                            if(null != match && match.length > 0)
-//                            {
-//                                console.log(match);
-//                                html = html.replace(regex, this.settings.wrapper.open + this.settings.current_search[i] + this.settings.wrapper.close)
-//                            }
-//                            passed.push(this.settings.current_search[i]);
-                        }
-                    }
-                    if(html != '')
-                    {
-                        this.element.html(html);
-                    }
-                    this.settings.current_search = null;
                 },
                 soundex : function (str) {
                     str = (str + '').toUpperCase();
